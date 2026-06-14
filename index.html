@@ -282,6 +282,7 @@ input:focus,select:focus{border-color:var(--verde-c);box-shadow:0 0 0 3px rgba(6
         <input type="url" id="inp-url" placeholder="https://script.google.com/macros/s/…/exec" style="font-size:.78rem">
         <button class="btn btn-verde" style="width:auto;padding:.5rem .9rem;font-size:.78rem" onclick="saveURL()">Guardar</button>
       </div>
+      <p style="font-size:.7rem;color:#777">Esta URL solo se aplica en este navegador. Para que funcione en cualquier dispositivo sin configurar nada, pégala en <code>DEFAULT_SHEET_URL</code> dentro del código y sube el archivo de nuevo.</p>
       <details style="font-size:.75rem;color:#555">
         <summary style="cursor:pointer;font-weight:600;color:var(--verde)">Ver código para Apps Script ▾</summary>
         <button class="btn btn-verde" style="width:auto;margin:.6rem 0;padding:.45rem .9rem;font-size:.75rem" onclick="copyAppsScript()">📋 Copiar código completo</button>
@@ -466,6 +467,15 @@ function doGet(e) {
 }`;
 
 // ══════════════════════════════════════════════════
+// CONFIGURACIÓN — pega aquí tu URL de Apps Script
+// (la que termina en /exec). Así, al subir este archivo
+// a GitHub Pages, TODOS los dispositivos que abran la
+// página ya quedan conectados automáticamente, sin
+// necesidad de configurar nada por su cuenta.
+// ══════════════════════════════════════════════════
+const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbym3eTBHH4YafpZrbaJHYpnt-NdzU1vEAxL3YTP6WFDJx4ZIGaAs9DT62FArVgC1ux3LQ/exec';
+
+// ══════════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════════
 const S = {
@@ -491,8 +501,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load Apps Script code into <pre>
   document.getElementById('apps-script-code').textContent = APPS_SCRIPT;
 
-  // Load persisted URL
-  S.sheetUrl = localStorage.getItem('fm_url') || '';
+  // Load persisted URL — localStorage override takes priority,
+  // otherwise fall back to the URL baked into the file.
+  S.sheetUrl = localStorage.getItem('fm_url') || DEFAULT_SHEET_URL || '';
 
   // Load local cache first (instant render)
   loadLocal();
@@ -614,15 +625,15 @@ function parseSheetRows(rows) {
 async function postToSheets(payload) {
   if (!S.sheetUrl) return;
   try {
-    // Apps Script doesn't handle CORS preflight requests, so we avoid
-    // triggering one: use text/plain (a "simple" content-type) and
-    // no-cors mode (we don't need to read the response, just fire it).
-    await fetch(S.sheetUrl, {
+    // text/plain avoids CORS preflight (Apps Script can't answer OPTIONS).
+    // Default 'cors' mode (not 'no-cors') lets Apps Script's redirect
+    // resolve correctly while preserving the POST body.
+    const res = await fetch(S.sheetUrl, {
       method: 'POST',
-      mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
     });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
   } catch(e) {
     console.warn('Sheets post error:', e);
     toast('No se pudo guardar en la nube (revisa tu conexión)', 'er');
