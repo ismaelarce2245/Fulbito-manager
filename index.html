@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Fulbito Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --verde:#1a3a2a;--verde-m:#2a5a40;--verde-c:#3d7a58;
+  --amarillo:#f5c842;--amarillo-d:#c9a020;
+  --blanco:#f5f5f0;--gris-d:#2d2d2d;--gris-m:#666;--gris-l:#eee;
+  --rojo:#e05252;--verde-ok:#2ea860;
+  --bg:#ecf0ec;
+  --rad:10px;--shadow:0 2px 10px rgba(0,0,0,.08);
+  --nav-h:56px;--hdr-h:60px;--score-h:46px;
+}
+
+html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--gris-d)}
+
+/* ── HEADER ── */
+#hdr{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  height:var(--hdr-h);background:var(--verde);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 1rem;box-shadow:0 2px 12px rgba(0,0,0,.3);
+}
+.logo{font-family:'Oswald',sans-serif;font-size:1.4rem;font-weight:700;
+  color:var(--blanco);letter-spacing:.04em;display:flex;align-items:center;gap:.4rem}
+.logo em{color:var(--amarillo);font-style:normal}
+#hdr-date{font-size:.7rem;color:rgba(255,255,255,.6);letter-spacing:.04em;text-align:right;line-height:1.4}
+
+/* ── SCOREBOARD ── */
+#score{
+  position:fixed;top:var(--hdr-h);left:0;right:0;z-index:190;
+  height:var(--score-h);background:var(--gris-d);
+  display:flex;align-items:center;justify-content:space-around;
+  border-bottom:3px solid var(--amarillo);
+}
+.sc-item{text-align:center}
+.sc-lbl{font-size:.58rem;color:#aaa;letter-spacing:.1em;font-family:'Oswald',sans-serif;line-height:1}
+.sc-val{font-family:'Oswald',sans-serif;font-size:1.05rem;font-weight:700;line-height:1.2}
+.sc-val.pos{color:#5cd68a}.sc-val.neg{color:var(--rojo)}.sc-val.neu{color:var(--amarillo)}
+
+/* ── NAV BOTTOM ── */
+#nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:200;
+  height:var(--nav-h);background:var(--verde);
+  display:flex;box-shadow:0 -2px 10px rgba(0,0,0,.2);
+}
+.tab{
+  flex:1;border:none;background:transparent;
+  color:rgba(255,255,255,.55);
+  font-family:'Oswald',sans-serif;font-size:.7rem;font-weight:500;
+  letter-spacing:.05em;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2rem;
+  border-top:3px solid transparent;transition:all .2s;padding:.4rem 0;
+}
+.tab .ti{font-size:1.2rem;line-height:1}
+.tab:hover{color:rgba(255,255,255,.85)}
+.tab.on{color:var(--amarillo);border-top-color:var(--amarillo);background:rgba(245,200,66,.08)}
+
+/* ── MAIN SCROLL ── */
+#main{
+  position:fixed;
+  top:calc(var(--hdr-h) + var(--score-h));
+  bottom:var(--nav-h);
+  left:0;right:0;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+}
+
+/* ── VIEWS ── */
+.view{display:none;padding:1rem;max-width:680px;margin:0 auto;padding-bottom:.5rem}
+.view.on{display:block}
+
+/* ── SETUP BANNER ── */
+#setup-banner{
+  background:linear-gradient(135deg,var(--amarillo),#e8b820);
+  border-radius:var(--rad);padding:1rem 1.1rem;margin-bottom:1rem;
+  display:flex;align-items:flex-start;gap:.75rem;
+}
+#setup-banner .si{font-size:1.4rem;flex-shrink:0}
+#setup-banner h3{font-family:'Oswald',sans-serif;font-size:.95rem;font-weight:600;color:var(--gris-d);margin-bottom:.25rem}
+#setup-banner p{font-size:.78rem;color:#555;line-height:1.5}
+#setup-banner a{color:var(--verde);font-weight:600;text-decoration:none}
+
+/* ── SYNC STATUS ── */
+#sync-bar{
+  display:flex;align-items:center;gap:.5rem;
+  background:white;border-radius:8px;padding:.5rem .9rem;
+  margin-bottom:.9rem;box-shadow:var(--shadow);font-size:.8rem;
+}
+.sync-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sync-dot.ok{background:#2ea860}.sync-dot.err{background:var(--rojo)}.sync-dot.loading{background:var(--amarillo);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#sync-msg{flex:1;color:var(--gris-m)}
+#sync-time{font-size:.7rem;color:#aaa}
+
+/* ── CARD ── */
+.card{background:white;border-radius:var(--rad);padding:1.1rem;margin-bottom:.9rem;box-shadow:var(--shadow)}
+.card-title{font-family:'Oswald',sans-serif;font-size:.9rem;font-weight:600;
+  color:var(--verde);letter-spacing:.06em;text-transform:uppercase;
+  margin-bottom:.9rem;display:flex;align-items:center;gap:.4rem}
+
+/* ── FORM ── */
+.field{margin-bottom:.7rem}
+.field:last-child{margin-bottom:0}
+label{display:block;font-size:.68rem;font-weight:600;color:var(--gris-m);
+  letter-spacing:.07em;text-transform:uppercase;margin-bottom:.3rem}
+input,select{
+  width:100%;padding:.62rem .85rem;
+  border:1.5px solid #ddd;border-radius:7px;
+  font-family:'Inter',sans-serif;font-size:.92rem;
+  background:var(--blanco);outline:none;color:var(--gris-d);
+  transition:border-color .2s,box-shadow .2s;
+  -webkit-appearance:none;
+}
+input:focus,select:focus{border-color:var(--verde-c);box-shadow:0 0 0 3px rgba(61,122,88,.12)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.7rem}
+
+/* ── AUTOCOMPLETE ── */
+.ac-wrap{position:relative}
+.ac-list{
+  display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;
+  background:white;border:1.5px solid #ddd;border-radius:8px;
+  box-shadow:0 8px 24px rgba(0,0,0,.14);z-index:300;
+  max-height:180px;overflow-y:auto;
+}
+.ac-list.open{display:block}
+.ac-item{
+  padding:.55rem .9rem;cursor:pointer;font-size:.88rem;
+  display:flex;align-items:center;gap:.5rem;
+}
+.ac-item::before{content:'👤';font-size:.75rem}
+.ac-item:hover,.ac-item.hi{background:var(--verde);color:white}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.35rem;
+  padding:.65rem 1.1rem;border:none;border-radius:8px;
+  font-family:'Oswald',sans-serif;font-size:.88rem;font-weight:600;
+  letter-spacing:.05em;cursor:pointer;transition:opacity .15s,transform .1s;
+  width:100%;
+}
+.btn:active{transform:scale(.97);opacity:.88}
+.btn-verde{background:var(--verde);color:var(--amarillo)}
+.btn-amarillo{background:var(--amarillo);color:var(--gris-d)}
+.btn-rojo{background:var(--rojo);color:white;padding:.3rem .65rem;font-size:.72rem;width:auto;border-radius:6px}
+.btn-outline{background:transparent;border:1.5px solid var(--verde);color:var(--verde)}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:.83rem}
+.tbl th{background:var(--verde);color:var(--amarillo);font-family:'Oswald',sans-serif;
+  font-weight:500;letter-spacing:.06em;padding:.55rem .75rem;text-align:left;font-size:.72rem;text-transform:uppercase}
+.tbl th:first-child{border-radius:6px 0 0 0}.tbl th:last-child{border-radius:0 6px 0 0}
+.tbl td{padding:.6rem .75rem;border-bottom:1px solid var(--gris-l);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:nth-child(even) td{background:rgba(26,58,42,.025)}
+.tbl tfoot td{font-family:'Oswald',sans-serif;font-size:.82rem;padding:.65rem .75rem;
+  font-weight:700;border-top:2px solid var(--gris-l)}
+.mono{font-family:'Oswald',sans-serif;font-size:.95rem}
+.c-ok{color:var(--verde-ok)}.c-err{color:var(--rojo)}.c-muted{color:#999;font-size:.75rem}
+
+/* ── RESUMEN BOXES ── */
+.sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;margin-bottom:.9rem}
+.sum-box{background:white;border-radius:var(--rad);padding:.9rem .7rem;text-align:center;
+  box-shadow:var(--shadow);border-top:4px solid var(--gris-l)}
+.sum-box.a{border-top-color:#5cd68a}.sum-box.g{border-top-color:var(--rojo)}.sum-box.s{border-top-color:var(--amarillo)}
+.sum-lbl{font-family:'Oswald',sans-serif;font-size:.6rem;letter-spacing:.1em;color:var(--gris-m);text-transform:uppercase;margin-bottom:.3rem}
+.sum-val{font-family:'Oswald',sans-serif;font-size:1.4rem;font-weight:700;line-height:1}
+.sum-box.a .sum-val{color:var(--verde-ok)}.sum-box.g .sum-val{color:var(--rojo)}.sum-box.s .sum-val{color:var(--verde)}
+
+/* ── STAT CARDS ── */
+.stat-row{background:white;border-radius:9px;padding:.85rem 1rem;
+  display:flex;align-items:center;gap:.85rem;margin-bottom:.6rem;box-shadow:var(--shadow)}
+.rank{font-family:'Oswald',sans-serif;font-size:1.5rem;font-weight:700;
+  color:var(--gris-l);min-width:32px;text-align:center}
+.rank.g{color:#f5c842}.rank.s{color:#b0b8c1}.rank.b{color:#cd7f32}
+.si-name{font-weight:600;font-size:.9rem}
+.si-sub{font-size:.73rem;color:var(--gris-m);margin-top:.1rem}
+.si-val{font-family:'Oswald',sans-serif;font-size:1.4rem;font-weight:700;color:var(--verde);text-align:right}
+.si-unit{font-size:.6rem;color:var(--gris-m);text-align:right;display:block}
+
+/* ── TROPHIES ── */
+.trophies{display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem;margin-bottom:.9rem}
+.trophy{background:white;border-radius:var(--rad);padding:.85rem .6rem;text-align:center;box-shadow:var(--shadow)}
+.tr-ico{font-size:1.6rem;line-height:1;margin-bottom:.3rem}
+.tr-lbl{font-family:'Oswald',sans-serif;font-size:.6rem;letter-spacing:.1em;color:var(--gris-m);text-transform:uppercase}
+.tr-name{font-weight:600;font-size:.82rem;color:var(--verde);margin-top:.2rem;word-break:break-word}
+.tr-val{font-family:'Oswald',sans-serif;font-size:.95rem;color:var(--amarillo-d);font-weight:700}
+
+/* ── CONFIG PANEL ── */
+.cfg-input{display:flex;gap:.5rem;margin-bottom:.6rem}
+.cfg-input input{flex:1}
+.cfg-input button{width:auto;flex-shrink:0}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:1.8rem 1rem;color:var(--gris-m);font-size:.85rem}
+.empty-ico{font-size:2rem;margin-bottom:.4rem;opacity:.4;display:block}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:calc(var(--nav-h) + .8rem);left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--gris-d);color:white;padding:.55rem 1.1rem;border-radius:20px;
+  font-size:.82rem;opacity:0;transition:all .3s;z-index:500;white-space:nowrap;pointer-events:none;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.ok{background:var(--verde-ok)}
+#toast.er{background:var(--rojo)}
+
+/* ── MODAL ── */
+#modal-bg{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;
+  align-items:center;justify-content:center;padding:1rem;
+}
+#modal-bg.open{display:flex}
+#modal{background:white;border-radius:var(--rad);padding:1.25rem;width:100%;max-width:420px;
+  box-shadow:0 20px 60px rgba(0,0,0,.2)}
+#modal h3{font-family:'Oswald',sans-serif;font-size:1.05rem;color:var(--verde);margin-bottom:.9rem}
+#modal .btn-row{display:flex;gap:.6rem;margin-top:1rem}
+#modal .btn-row .btn{flex:1}
+
+/* ── RESPONSIVE ── */
+@media(min-width:540px){
+  .view{padding:1.25rem}
+  .sum-val{font-size:1.7rem}
+  .sc-val{font-size:1.2rem}
+}
+@media(max-width:340px){
+  .sum-grid{grid-template-columns:1fr}
+  .trophies{grid-template-columns:1fr 1fr}
+  .row2,.row3{grid-template-columns:1fr}
+  .logo{font-size:1.15rem}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="hdr">
+  <div class="logo">⚽ <em>FULBITO</em> MANAGER</div>
+  <div id="hdr-date"></div>
+</header>
+
+<!-- SCOREBOARD -->
+<div id="score">
+  <div class="sc-item"><div class="sc-lbl">APORTES</div><div class="sc-val pos" id="sb-a">S/ 0.00</div></div>
+  <div class="sc-item"><div class="sc-lbl">GASTOS</div><div class="sc-val neg" id="sb-g">S/ 0.00</div></div>
+  <div class="sc-item"><div class="sc-lbl">SALDO</div><div class="sc-val neu" id="sb-s">S/ 0.00</div></div>
+</div>
+
+<!-- MAIN -->
+<main id="main">
+
+  <!-- ════ VIEW: APORTES ════ -->
+  <section class="view on" id="v-aportes">
+    <div id="sync-bar-a" class="card" style="display:flex;align-items:center;gap:.6rem;padding:.6rem .9rem;margin-bottom:.9rem">
+      <div class="sync-dot loading" id="dot-a"></div>
+      <span id="msg-a" style="font-size:.78rem;color:var(--gris-m);flex:1">Conectando con Google Sheets…</span>
+      <span id="time-a" style="font-size:.68rem;color:#aaa"></span>
+    </div>
+
+    <div id="setup-banner" class="card" style="display:none;border-left:4px solid var(--amarillo);flex-direction:column;gap:.5rem">
+      <div style="display:flex;align-items:flex-start;gap:.6rem">
+        <span style="font-size:1.4rem">⚙️</span>
+        <div>
+          <h3 style="font-family:'Oswald',sans-serif;font-size:.95rem;color:var(--gris-d);margin-bottom:.25rem">CONFIGURA GOOGLE SHEETS</h3>
+          <p style="font-size:.78rem;color:#555;line-height:1.6">
+            Para guardar en la nube necesitas conectar tu Google Sheet.<br>
+            <strong>Pasos:</strong><br>
+            1. Abre <a href="https://sheets.google.com" target="_blank">Google Sheets</a> y crea una hoja nueva.<br>
+            2. Ve a <strong>Extensiones → Apps Script</strong>.<br>
+            3. Pega el código del script (ver instrucciones abajo).<br>
+            4. Despliega como Web App → cualquiera puede acceder.<br>
+            5. Copia la URL del despliegue y pégala abajo.
+          </p>
+        </div>
+      </div>
+      <div class="cfg-input">
+        <input type="url" id="inp-url" placeholder="https://script.google.com/macros/s/…/exec" style="font-size:.78rem">
+        <button class="btn btn-verde" style="width:auto;padding:.5rem .9rem;font-size:.78rem" onclick="saveURL()">Guardar</button>
+      </div>
+      <details style="font-size:.75rem;color:#555">
+        <summary style="cursor:pointer;font-weight:600;color:var(--verde)">Ver código para Apps Script ▾</summary>
+        <button class="btn btn-verde" style="width:auto;margin:.6rem 0;padding:.45rem .9rem;font-size:.75rem" onclick="copyAppsScript()">📋 Copiar código completo</button>
+        <pre id="apps-script-code" style="margin-top:.25rem;background:#f5f5f0;padding:.75rem;border-radius:6px;overflow-x:auto;font-size:.68rem;line-height:1.6;white-space:pre-wrap"></pre>
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💰 Registrar Aporte</div>
+      <div class="field">
+        <label>Nombre del jugador</label>
+        <div class="ac-wrap">
+          <input type="text" id="inp-nombre" placeholder="Buscar o escribir nombre…" autocomplete="off">
+          <div class="ac-list" id="ac-a"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Monto (S/)</label>
+        <input type="number" id="inp-monto" placeholder="0.00" min="0" step="0.50" inputmode="decimal">
+      </div>
+      <button class="btn btn-verde" onclick="addAporte()">➕ Registrar aporte</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Aportes del día</div>
+      <div id="tbl-aportes"><div class="empty"><span class="empty-ico">💸</span>Sin aportes aún.</div></div>
+    </div>
+  </section>
+
+  <!-- ════ VIEW: GASTOS ════ -->
+  <section class="view" id="v-gastos">
+    <div class="card">
+      <div class="card-title">🧾 Registrar Gasto</div>
+      <div class="field">
+        <label>Descripción</label>
+        <input type="text" id="inp-gdesc" placeholder="Ej: Cancha, Pelotas, Agua…">
+      </div>
+      <div class="field">
+        <label>Monto (S/)</label>
+        <input type="number" id="inp-gmonto" placeholder="0.00" min="0" step="0.50" inputmode="decimal">
+      </div>
+      <button class="btn btn-amarillo" onclick="addGasto()">➕ Registrar gasto</button>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 Gastos del día</div>
+      <div id="tbl-gastos"><div class="empty"><span class="empty-ico">🧾</span>Sin gastos aún.</div></div>
+    </div>
+  </section>
+
+  <!-- ════ VIEW: RESUMEN ════ -->
+  <section class="view" id="v-resumen">
+    <div class="sum-grid">
+      <div class="sum-box a"><div class="sum-lbl">💰 Aportes</div><div class="sum-val" id="r-a">S/ 0</div></div>
+      <div class="sum-box g"><div class="sum-lbl">🧾 Gastos</div><div class="sum-val" id="r-g">S/ 0</div></div>
+      <div class="sum-box s"><div class="sum-lbl">💵 Saldo</div><div class="sum-val" id="r-s">S/ 0</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">👥 Aporte por jugador</div>
+      <div id="r-jug"><div class="empty"><span class="empty-ico">👥</span>Sin datos.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🧾 Detalle de gastos</div>
+      <div id="r-gas"><div class="empty"><span class="empty-ico">🧾</span>Sin gastos.</div></div>
+    </div>
+  </section>
+
+  <!-- ════ VIEW: ESTADÍSTICAS ════ -->
+  <section class="view" id="v-stats">
+    <div class="trophies" id="trophies">
+      <div class="trophy"><div class="tr-ico">🥇</div><div class="tr-lbl">Goleador</div><div class="tr-name" id="tr-g">—</div><div class="tr-val" id="tr-gv">—</div></div>
+      <div class="trophy"><div class="tr-ico">⭐</div><div class="tr-lbl">MVP</div><div class="tr-name" id="tr-m">—</div><div class="tr-val" id="tr-mv">—</div></div>
+      <div class="trophy"><div class="tr-ico">🧤</div><div class="tr-lbl">Arquero</div><div class="tr-name" id="tr-a">—</div><div class="tr-val" id="tr-av">—</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚽ Registrar Goles</div>
+      <div class="field">
+        <label>Jugador</label>
+        <div class="ac-wrap">
+          <input type="text" id="inp-gnom" placeholder="Nombre del jugador…" autocomplete="off">
+          <div class="ac-list" id="ac-g"></div>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Goles</label><input type="number" id="inp-goles" placeholder="0" min="0" inputmode="numeric"></div>
+        <div class="field" style="display:flex;align-items:flex-end">
+          <button class="btn btn-verde" onclick="addGoles()">➕ Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🏅 Registrar Puntuación</div>
+      <div class="field">
+        <label>Jugador</label>
+        <div class="ac-wrap">
+          <input type="text" id="inp-pnom" placeholder="Nombre del jugador…" autocomplete="off">
+          <div class="ac-list" id="ac-p"></div>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Pts Mejor Jugador</label><input type="number" id="inp-pmvp" placeholder="0-10" min="0" max="10" inputmode="numeric"></div>
+        <div class="field"><label>Pts Mejor Arquero</label><input type="number" id="inp-parq" placeholder="0-10" min="0" max="10" inputmode="numeric"></div>
+      </div>
+      <button class="btn btn-amarillo" onclick="addPuntos()">➕ Guardar puntuación</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚽ Ranking Goleadores</div>
+      <div id="rank-goles"><div class="empty"><span class="empty-ico">⚽</span>Sin goles registrados.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏅 Ranking Puntuaciones</div>
+      <div id="rank-pts"><div class="empty"><span class="empty-ico">🏅</span>Sin puntuaciones.</div></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- NAV BOTTOM -->
+<nav id="nav">
+  <button class="tab on" data-view="aportes"><span class="ti">💰</span>APORTES</button>
+  <button class="tab" data-view="gastos"><span class="ti">🧾</span>GASTOS</button>
+  <button class="tab" data-view="resumen"><span class="ti">📊</span>RESUMEN</button>
+  <button class="tab" data-view="stats"><span class="ti">🏆</span>STATS</button>
+</nav>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- CONFIRM MODAL -->
+<div id="modal-bg">
+  <div id="modal">
+    <h3 id="modal-title">¿Eliminar registro?</h3>
+    <p id="modal-body" style="font-size:.85rem;color:var(--gris-m)">Esta acción no se puede deshacer.</p>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-verde" id="modal-ok">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// APPS SCRIPT CODE (shown in setup instructions)
+// ══════════════════════════════════════════════════
+const APPS_SCRIPT = `// Pega este código en Extensions > Apps Script
+const SHEET_NAME = 'Fulbito';
+
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_NAME);
+      sheet.appendRow(['tipo','id','col1','col2','col3','col4','fecha']);
+    }
+    if (data.action === 'add') {
+      sheet.appendRow([data.tipo, data.id, data.c1||'', data.c2||'', data.c3||'', data.c4||'', new Date().toISOString()]);
+    } else if (data.action === 'delete') {
+      const rows = sheet.getDataRange().getValues();
+      for (let i = rows.length - 1; i >= 1; i--) {
+        if (String(rows[i][1]) === String(data.id)) { sheet.deleteRow(i + 1); break; }
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({ok:true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } finally { lock.releaseLock(); }
+}
+
+function doGet(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) return ContentService.createTextOutput(JSON.stringify({rows:[]}))
+    .setMimeType(ContentService.MimeType.JSON);
+  const rows = sheet.getDataRange().getValues().slice(1);
+  return ContentService.createTextOutput(JSON.stringify({rows}))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+const S = {
+  jugadores: [],
+  aportes:   [],
+  gastos:    [],
+  goles:     [],
+  puntos:    [],
+  sheetUrl:  '',
+  loaded:    false,
+};
+
+// ══════════════════════════════════════════════════
+// INIT — runs after DOM is ready
+// ══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Date header
+  const d = new Date();
+  document.getElementById('hdr-date').innerHTML =
+    d.toLocaleDateString('es-PE',{weekday:'short',day:'numeric',month:'short'}).toUpperCase()
+    + '<br>' + d.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+
+  // Load Apps Script code into <pre>
+  document.getElementById('apps-script-code').textContent = APPS_SCRIPT;
+
+  // Load persisted URL
+  S.sheetUrl = localStorage.getItem('fm_url') || '';
+
+  // Load local cache first (instant render)
+  loadLocal();
+  renderAll();
+  updateScoreboard();
+
+  // Then fetch from sheets if URL exists
+  if (S.sheetUrl) {
+    fetchFromSheets();
+  } else {
+    setSyncStatus('a', 'warn', 'Sin Google Sheets configurado — datos locales', '');
+    document.getElementById('setup-banner').style.display = 'flex';
+    if (document.getElementById('inp-url'))
+      document.getElementById('inp-url').value = S.sheetUrl;
+  }
+
+  // Nav tabs
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => showTab(btn.dataset.view));
+  });
+
+  // Autocomplete wiring
+  wireAC('inp-nombre','ac-a');
+  wireAC('inp-gnom',  'ac-g');
+  wireAC('inp-pnom',  'ac-p');
+
+  // Close AC on outside click
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.ac-wrap')) {
+      document.querySelectorAll('.ac-list').forEach(l => l.classList.remove('open'));
+    }
+  });
+});
+
+// ══════════════════════════════════════════════════
+// LOCAL STORAGE
+// ══════════════════════════════════════════════════
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem('fm_data');
+    if (raw) {
+      const d = JSON.parse(raw);
+      S.jugadores = d.jugadores || [];
+      S.aportes   = d.aportes   || [];
+      S.gastos    = d.gastos    || [];
+      S.goles     = d.goles     || [];
+      S.puntos    = d.puntos    || [];
+    }
+  } catch(e) { console.warn('Local load error:', e); }
+}
+function saveLocal() {
+  try {
+    localStorage.setItem('fm_data', JSON.stringify({
+      jugadores: S.jugadores,
+      aportes:   S.aportes,
+      gastos:    S.gastos,
+      goles:     S.goles,
+      puntos:    S.puntos,
+    }));
+  } catch(e) { console.warn('Local save error:', e); }
+}
+
+// ══════════════════════════════════════════════════
+// GOOGLE SHEETS API
+// ══════════════════════════════════════════════════
+function saveURL() {
+  const el = document.getElementById('inp-url');
+  if (!el) return;
+  const url = el.value.trim();
+  if (!url.startsWith('https://script.google.com')) {
+    toast('URL inválida. Debe ser de Google Apps Script.', 'er'); return;
+  }
+  S.sheetUrl = url;
+  localStorage.setItem('fm_url', url);
+  document.getElementById('setup-banner').style.display = 'none';
+  toast('URL guardada ✓', 'ok');
+  fetchFromSheets();
+}
+
+async function fetchFromSheets() {
+  setSyncStatus('a', 'loading', 'Sincronizando con Google Sheets…', '');
+  try {
+    const res = await fetch(S.sheetUrl + '?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    parseSheetRows(data.rows || []);
+    saveLocal();
+    renderAll();
+    updateScoreboard();
+    const now = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+    setSyncStatus('a', 'ok', 'Sincronizado con Google Sheets', now);
+  } catch(err) {
+    setSyncStatus('a', 'err', 'Sin conexión — mostrando datos locales', '');
+    console.warn('Sheets fetch error:', err);
+  }
+}
+
+function parseSheetRows(rows) {
+  S.aportes = []; S.gastos = []; S.goles = []; S.puntos = []; S.jugadores = [];
+  const jugs = new Set();
+  rows.forEach(r => {
+    const [tipo, id, c1, c2, c3, c4] = r;
+    if (tipo === 'aporte') {
+      S.aportes.push({ id, nombre: c1, monto: parseFloat(c2)||0, ts: c3 });
+      if (c1) jugs.add(c1);
+    } else if (tipo === 'gasto') {
+      S.gastos.push({ id, desc: c1, monto: parseFloat(c2)||0, ts: c3 });
+    } else if (tipo === 'gol') {
+      S.goles.push({ id, nombre: c1, goles: parseInt(c2)||0 });
+      if (c1) jugs.add(c1);
+    } else if (tipo === 'punto') {
+      S.puntos.push({ id, nombre: c1, ptsJugador: parseFloat(c2)||0, ptsArquero: parseFloat(c3)||0 });
+      if (c1) jugs.add(c1);
+    }
+  });
+  S.jugadores = [...jugs];
+}
+
+async function postToSheets(payload) {
+  if (!S.sheetUrl) return;
+  try {
+    // Apps Script doesn't handle CORS preflight requests, so we avoid
+    // triggering one: use text/plain (a "simple" content-type) and
+    // no-cors mode (we don't need to read the response, just fire it).
+    await fetch(S.sheetUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+  } catch(e) {
+    console.warn('Sheets post error:', e);
+    toast('No se pudo guardar en la nube (revisa tu conexión)', 'er');
+  }
+}
+
+function setSyncStatus(key, type, msg, time) {
+  const dot = document.getElementById('dot-a');
+  const msgEl = document.getElementById('msg-a');
+  const timeEl = document.getElementById('time-a');
+  if (!dot || !msgEl) return;
+  dot.className = 'sync-dot ' + (type === 'ok' ? 'ok' : type === 'err' ? 'err' : type === 'warn' ? 'err' : 'loading');
+  msgEl.textContent = msg;
+  if (timeEl) timeEl.textContent = time;
+}
+
+// ══════════════════════════════════════════════════
+// JUGADORES helper
+// ══════════════════════════════════════════════════
+function ensureJugador(nombre) {
+  if (!nombre) return;
+  nombre = nombre.trim();
+  if (!S.jugadores.includes(nombre)) S.jugadores.push(nombre);
+}
+
+// ══════════════════════════════════════════════════
+// AUTOCOMPLETE
+// ══════════════════════════════════════════════════
+function wireAC(inputId, listId) {
+  const inp = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+  if (!inp || !list) return;
+
+  inp.addEventListener('input', () => renderAC(inp, list));
+  inp.addEventListener('focus', () => renderAC(inp, list));
+  inp.addEventListener('keydown', e => {
+    const items = list.querySelectorAll('.ac-item');
+    const cur = list.querySelector('.ac-item.hi');
+    let idx = cur ? [...items].indexOf(cur) : -1;
+    if (e.key === 'ArrowDown') { idx = Math.min(idx+1, items.length-1); }
+    else if (e.key === 'ArrowUp') { idx = Math.max(idx-1, 0); }
+    else if ((e.key === 'Enter' || e.key === 'Tab') && cur) {
+      inp.value = cur.textContent.trim(); list.classList.remove('open'); e.preventDefault(); return;
+    } else if (e.key === 'Escape') { list.classList.remove('open'); return; }
+    else return;
+    items.forEach((it,i) => it.classList.toggle('hi', i === idx));
+    e.preventDefault();
+  });
+
+  list.addEventListener('mousedown', e => {
+    const item = e.target.closest('.ac-item');
+    if (item) { inp.value = item.textContent.trim(); list.classList.remove('open'); e.preventDefault(); }
+  });
+}
+
+function renderAC(inp, list) {
+  const q = inp.value.toLowerCase().trim();
+  const matches = q ? S.jugadores.filter(n => n.toLowerCase().includes(q)) : [...S.jugadores];
+  if (!matches.length) { list.classList.remove('open'); return; }
+  list.innerHTML = matches.map(n => `<div class="ac-item">${n}</div>`).join('');
+  list.classList.add('open');
+}
+
+// ══════════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════════
+function showTab(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+  const view = document.getElementById('v-' + name);
+  if (view) view.classList.add('on');
+  const btn = document.querySelector(`.tab[data-view="${name}"]`);
+  if (btn) btn.classList.add('on');
+  document.getElementById('main').scrollTop = 0;
+
+  // Always re-render resumen and stats when navigating to them
+  if (name === 'resumen') renderResumen();
+  if (name === 'stats')   renderStats();
+}
+
+// ══════════════════════════════════════════════════
+// RENDER ALL
+// ══════════════════════════════════════════════════
+function renderAll() {
+  renderAportes();
+  renderGastos();
+  renderResumen();
+  renderStats();
+}
+
+// ══════════════════════════════════════════════════
+// SCOREBOARD
+// ══════════════════════════════════════════════════
+function updateScoreboard() {
+  const totA = S.aportes.reduce((s,a) => s + a.monto, 0);
+  const totG = S.gastos.reduce((s,g) => s + g.monto, 0);
+  const saldo = totA - totG;
+  const sbA = document.getElementById('sb-a');
+  const sbG = document.getElementById('sb-g');
+  const sbS = document.getElementById('sb-s');
+  if (sbA) sbA.textContent = 'S/ ' + totA.toFixed(2);
+  if (sbG) sbG.textContent = 'S/ ' + totG.toFixed(2);
+  if (sbS) {
+    sbS.textContent = 'S/ ' + saldo.toFixed(2);
+    sbS.className = 'sc-val ' + (saldo > 0 ? 'pos' : saldo < 0 ? 'neg' : 'neu');
+  }
+}
+
+// ══════════════════════════════════════════════════
+// APORTES
+// ══════════════════════════════════════════════════
+async function addAporte() {
+  const inp    = document.getElementById('inp-nombre');
+  const inpM   = document.getElementById('inp-monto');
+  const nombre = inp ? inp.value.trim() : '';
+  const monto  = parseFloat(inpM ? inpM.value : '');
+  if (!nombre) { toast('Ingresa el nombre del jugador', 'er'); return; }
+  if (!monto || monto <= 0) { toast('Ingresa un monto válido', 'er'); return; }
+
+  const ts = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+  const id = Date.now().toString();
+  ensureJugador(nombre);
+  S.aportes.push({ id, nombre, monto, ts });
+  saveLocal();
+  if (inp) inp.value = '';
+  if (inpM) inpM.value = '';
+  renderAportes();
+  updateScoreboard();
+  toast('Aporte registrado ✓', 'ok');
+  await postToSheets({ action:'add', tipo:'aporte', id, c1:nombre, c2:monto, c3:ts });
+}
+
+function deleteAporteConfirm(id) {
+  openModal('¿Eliminar este aporte?', 'Se quitará de la lista y de Google Sheets.', async () => {
+    S.aportes = S.aportes.filter(a => a.id !== id);
+    saveLocal();
+    renderAportes();
+    updateScoreboard();
+    toast('Aporte eliminado', '');
+    await postToSheets({ action:'delete', tipo:'aporte', id });
+  });
+}
+
+function renderAportes() {
+  const wrap = document.getElementById('tbl-aportes');
+  if (!wrap) return;
+  if (!S.aportes.length) {
+    wrap.innerHTML = '<div class="empty"><span class="empty-ico">💸</span>Sin aportes aún.</div>';
+    return;
+  }
+  const total = S.aportes.reduce((s,a) => s + a.monto, 0);
+  wrap.innerHTML = `<table class="tbl">
+    <thead><tr><th>Jugador</th><th>Monto</th><th>Hora</th><th></th></tr></thead>
+    <tbody>${S.aportes.map(a => `<tr>
+      <td><strong>${esc(a.nombre)}</strong></td>
+      <td class="mono c-ok">S/ ${a.monto.toFixed(2)}</td>
+      <td class="c-muted">${esc(a.ts)}</td>
+      <td><button class="btn btn-rojo" onclick="deleteAporteConfirm('${a.id}')">✕</button></td>
+    </tr>`).join('')}</tbody>
+    <tfoot><tr>
+      <td colspan="2" style="color:var(--gris-m);font-size:.72rem;letter-spacing:.06em">TOTAL</td>
+      <td class="c-ok" style="font-size:1rem">S/ ${total.toFixed(2)}</td><td></td>
+    </tr></tfoot>
+  </table>`;
+}
+
+// ══════════════════════════════════════════════════
+// GASTOS
+// ══════════════════════════════════════════════════
+async function addGasto() {
+  const inpD  = document.getElementById('inp-gdesc');
+  const inpM  = document.getElementById('inp-gmonto');
+  const desc  = inpD ? inpD.value.trim() : '';
+  const monto = parseFloat(inpM ? inpM.value : '');
+  if (!desc)  { toast('Ingresa la descripción', 'er'); return; }
+  if (!monto || monto <= 0) { toast('Ingresa un monto válido', 'er'); return; }
+
+  const ts = new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+  const id = Date.now().toString();
+  S.gastos.push({ id, desc, monto, ts });
+  saveLocal();
+  if (inpD) inpD.value = '';
+  if (inpM) inpM.value = '';
+  renderGastos();
+  updateScoreboard();
+  toast('Gasto registrado ✓', 'ok');
+  await postToSheets({ action:'add', tipo:'gasto', id, c1:desc, c2:monto, c3:ts });
+}
+
+function deleteGastoConfirm(id) {
+  openModal('¿Eliminar este gasto?', 'Se quitará de la lista y de Google Sheets.', async () => {
+    S.gastos = S.gastos.filter(g => g.id !== id);
+    saveLocal();
+    renderGastos();
+    updateScoreboard();
+    toast('Gasto eliminado', '');
+    await postToSheets({ action:'delete', tipo:'gasto', id });
+  });
+}
+
+function renderGastos() {
+  const wrap = document.getElementById('tbl-gastos');
+  if (!wrap) return;
+  if (!S.gastos.length) {
+    wrap.innerHTML = '<div class="empty"><span class="empty-ico">🧾</span>Sin gastos aún.</div>';
+    return;
+  }
+  const total = S.gastos.reduce((s,g) => s + g.monto, 0);
+  wrap.innerHTML = `<table class="tbl">
+    <thead><tr><th>Descripción</th><th>Monto</th><th>Hora</th><th></th></tr></thead>
+    <tbody>${S.gastos.map(g => `<tr>
+      <td><strong>${esc(g.desc)}</strong></td>
+      <td class="mono c-err">S/ ${g.monto.toFixed(2)}</td>
+      <td class="c-muted">${esc(g.ts)}</td>
+      <td><button class="btn btn-rojo" onclick="deleteGastoConfirm('${g.id}')">✕</button></td>
+    </tr>`).join('')}</tbody>
+    <tfoot><tr>
+      <td colspan="2" style="color:var(--gris-m);font-size:.72rem;letter-spacing:.06em">TOTAL</td>
+      <td class="c-err" style="font-size:1rem">S/ ${total.toFixed(2)}</td><td></td>
+    </tr></tfoot>
+  </table>`;
+}
+
+// ══════════════════════════════════════════════════
+// RESUMEN
+// ══════════════════════════════════════════════════
+function renderResumen() {
+  const totA  = S.aportes.reduce((s,a) => s + a.monto, 0);
+  const totG  = S.gastos.reduce((s,g)  => s + g.monto, 0);
+  const saldo = totA - totG;
+
+  const rA = document.getElementById('r-a');
+  const rG = document.getElementById('r-g');
+  const rS = document.getElementById('r-s');
+  if (rA) rA.textContent = 'S/ ' + totA.toFixed(2);
+  if (rG) rG.textContent = 'S/ ' + totG.toFixed(2);
+  if (rS) {
+    rS.textContent = 'S/ ' + saldo.toFixed(2);
+    rS.style.color = saldo >= 0 ? 'var(--verde-ok)' : 'var(--rojo)';
+  }
+
+  // Por jugador
+  const byJ = {};
+  S.aportes.forEach(a => { byJ[a.nombre] = (byJ[a.nombre] || 0) + a.monto; });
+  const jugList = Object.entries(byJ).sort((a,b) => b[1]-a[1]);
+  const wJ = document.getElementById('r-jug');
+  if (wJ) wJ.innerHTML = jugList.length
+    ? `<table class="tbl">
+        <thead><tr><th>Jugador</th><th>Total</th></tr></thead>
+        <tbody>${jugList.map(([n,m]) => `<tr>
+          <td><strong>${esc(n)}</strong></td>
+          <td class="mono c-ok">S/ ${m.toFixed(2)}</td>
+        </tr>`).join('')}</tbody>
+      </table>`
+    : '<div class="empty"><span class="empty-ico">👥</span>Sin datos.</div>';
+
+  // Gastos detalle
+  const wG = document.getElementById('r-gas');
+  if (wG) wG.innerHTML = S.gastos.length
+    ? `<table class="tbl">
+        <thead><tr><th>Descripción</th><th>Monto</th></tr></thead>
+        <tbody>${S.gastos.map(g => `<tr>
+          <td>${esc(g.desc)}</td>
+          <td class="mono c-err">S/ ${g.monto.toFixed(2)}</td>
+        </tr>`).join('')}</tbody>
+      </table>`
+    : '<div class="empty"><span class="empty-ico">🧾</span>Sin gastos.</div>';
+}
+
+// ══════════════════════════════════════════════════
+// STATS — GOLES
+// ══════════════════════════════════════════════════
+async function addGoles() {
+  const inpN = document.getElementById('inp-gnom');
+  const inpG = document.getElementById('inp-goles');
+  const nombre = inpN ? inpN.value.trim() : '';
+  const goles  = parseInt(inpG ? inpG.value : '');
+  if (!nombre) { toast('Ingresa el nombre', 'er'); return; }
+  if (isNaN(goles) || goles < 0) { toast('Ingresa los goles', 'er'); return; }
+
+  ensureJugador(nombre);
+  const existing = S.goles.find(g => g.nombre.toLowerCase() === nombre.toLowerCase());
+  const id = Date.now().toString();
+  if (existing) {
+    existing.goles += goles;
+    await postToSheets({ action:'delete', tipo:'gol', id: existing.id });
+    existing.id = id;
+    await postToSheets({ action:'add', tipo:'gol', id, c1:existing.nombre, c2:existing.goles });
+  } else {
+    S.goles.push({ id, nombre, goles });
+    await postToSheets({ action:'add', tipo:'gol', id, c1:nombre, c2:goles });
+  }
+  saveLocal();
+  if (inpN) inpN.value = '';
+  if (inpG) inpG.value = '';
+  renderStats();
+  toast('Goles guardados ✓', 'ok');
+}
+
+// ══════════════════════════════════════════════════
+// STATS — PUNTOS
+// ══════════════════════════════════════════════════
+async function addPuntos() {
+  const inpN = document.getElementById('inp-pnom');
+  const inpJ = document.getElementById('inp-pmvp');
+  const inpA = document.getElementById('inp-parq');
+  const nombre     = inpN ? inpN.value.trim() : '';
+  const ptsJugador = parseFloat(inpJ ? inpJ.value : '') || 0;
+  const ptsArquero = parseFloat(inpA ? inpA.value : '') || 0;
+  if (!nombre) { toast('Ingresa el nombre', 'er'); return; }
+  if (ptsJugador === 0 && ptsArquero === 0) { toast('Ingresa al menos un puntaje', 'er'); return; }
+
+  ensureJugador(nombre);
+  const existing = S.puntos.find(p => p.nombre.toLowerCase() === nombre.toLowerCase());
+  const id = Date.now().toString();
+  if (existing) {
+    existing.ptsJugador += ptsJugador;
+    existing.ptsArquero += ptsArquero;
+    await postToSheets({ action:'delete', tipo:'punto', id: existing.id });
+    existing.id = id;
+    await postToSheets({ action:'add', tipo:'punto', id, c1:existing.nombre, c2:existing.ptsJugador, c3:existing.ptsArquero });
+  } else {
+    S.puntos.push({ id, nombre, ptsJugador, ptsArquero });
+    await postToSheets({ action:'add', tipo:'punto', id, c1:nombre, c2:ptsJugador, c3:ptsArquero });
+  }
+  saveLocal();
+  if (inpN) inpN.value = '';
+  if (inpJ) inpJ.value = '';
+  if (inpA) inpA.value = '';
+  renderStats();
+  toast('Puntuación guardada ✓', 'ok');
+}
+
+// ══════════════════════════════════════════════════
+// RENDER STATS
+// ══════════════════════════════════════════════════
+function rankCls(i) { return ['g','s','b'][i] || ''; }
+function rankSym(i) { return ['🥇','🥈','🥉'][i] || (i+1); }
+
+function renderStats() {
+  const golesRank = [...S.goles].sort((a,b) => b.goles - a.goles);
+  const mvpRank   = [...S.puntos].sort((a,b) => b.ptsJugador - a.ptsJugador);
+  const arqRank   = [...S.puntos].sort((a,b) => b.ptsArquero - a.ptsArquero);
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('tr-g',  golesRank[0]?.nombre || '—');
+  set('tr-gv', golesRank[0] ? golesRank[0].goles + ' ⚽' : '—');
+  set('tr-m',  mvpRank[0]?.nombre   || '—');
+  set('tr-mv', mvpRank[0] ? mvpRank[0].ptsJugador + ' pts' : '—');
+  set('tr-a',  arqRank[0]?.nombre   || '—');
+  set('tr-av', arqRank[0] ? arqRank[0].ptsArquero + ' pts' : '—');
+
+  const rG = document.getElementById('rank-goles');
+  if (rG) rG.innerHTML = golesRank.length
+    ? golesRank.map((g,i) => `<div class="stat-row">
+        <div class="rank ${rankCls(i)}">${rankSym(i)}</div>
+        <div style="flex:1"><div class="si-name">${esc(g.nombre)}</div></div>
+        <div><div class="si-val">${g.goles}</div><span class="si-unit">GOLES</span></div>
+        <button class="btn btn-rojo" style="margin-left:.5rem" onclick="deleteGolConfirm('${g.id}')">✕</button>
+      </div>`).join('')
+    : '<div class="empty"><span class="empty-ico">⚽</span>Sin goles.</div>';
+
+  const sorted = [...S.puntos].sort((a,b) => (b.ptsJugador+b.ptsArquero)-(a.ptsJugador+a.ptsArquero));
+  const rP = document.getElementById('rank-pts');
+  if (rP) rP.innerHTML = sorted.length
+    ? sorted.map((p,i) => `<div class="stat-row">
+        <div class="rank ${rankCls(i)}">${rankSym(i)}</div>
+        <div style="flex:1">
+          <div class="si-name">${esc(p.nombre)}</div>
+          <div class="si-sub">⭐ ${p.ptsJugador} pts &nbsp;|&nbsp; 🧤 ${p.ptsArquero} pts</div>
+        </div>
+        <div><div class="si-val">${(p.ptsJugador+p.ptsArquero).toFixed(1)}</div><span class="si-unit">TOTAL</span></div>
+        <button class="btn btn-rojo" style="margin-left:.5rem" onclick="deletePuntoConfirm('${p.id}')">✕</button>
+      </div>`).join('')
+    : '<div class="empty"><span class="empty-ico">🏅</span>Sin puntuaciones.</div>';
+}
+
+function deleteGolConfirm(id) {
+  openModal('¿Eliminar este registro de goles?', '', async () => {
+    S.goles = S.goles.filter(g => g.id !== id);
+    saveLocal(); renderStats(); toast('Eliminado', '');
+    await postToSheets({ action:'delete', tipo:'gol', id });
+  });
+}
+function deletePuntoConfirm(id) {
+  openModal('¿Eliminar esta puntuación?', '', async () => {
+    S.puntos = S.puntos.filter(p => p.id !== id);
+    saveLocal(); renderStats(); toast('Eliminado', '');
+    await postToSheets({ action:'delete', tipo:'punto', id });
+  });
+}
+
+// ══════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════
+let toastTimer;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  clearTimeout(toastTimer);
+  el.textContent = msg;
+  el.className = 'show ' + (type || '');
+  toastTimer = setTimeout(() => el.className = '', 2500);
+}
+
+// ══════════════════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════════════════
+let _modalCb;
+function openModal(title, body, cb) {
+  const bg = document.getElementById('modal-bg');
+  const t  = document.getElementById('modal-title');
+  const b  = document.getElementById('modal-body');
+  const ok = document.getElementById('modal-ok');
+  if (!bg || !t || !ok) { if (cb) cb(); return; }
+  t.textContent = title;
+  if (b) b.textContent = body;
+  _modalCb = cb;
+  bg.classList.add('open');
+  ok.onclick = () => { closeModal(); if (_modalCb) _modalCb(); };
+}
+function closeModal() {
+  const bg = document.getElementById('modal-bg');
+  if (bg) bg.classList.remove('open');
+}
+
+// ══════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
