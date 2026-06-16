@@ -97,6 +97,13 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 #sync-msg{flex:1;color:var(--gris-m)}
 #sync-time{font-size:.7rem;color:#aaa}
+.btn-refresh{
+  border:none;background:var(--bg);color:var(--gris-d);
+  width:30px;height:30px;border-radius:50%;font-size:.9rem;
+  cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:transform .3s;
+}
+.btn-refresh:active{transform:rotate(180deg)}
 
 /* ── CARD ── */
 .card{background:white;border-radius:var(--rad);padding:1.1rem;margin-bottom:.9rem;box-shadow:var(--shadow)}
@@ -293,6 +300,7 @@ input:focus,select:focus{border-color:var(--verde-c);box-shadow:0 0 0 3px rgba(0
       <div class="sync-dot loading" id="dot-a"></div>
       <span id="msg-a" style="font-size:.78rem;color:var(--gris-m);flex:1">Conectando con Google Sheets…</span>
       <span id="time-a" style="font-size:.68rem;color:#aaa"></span>
+      <button class="btn-refresh" onclick="fetchFromSheets()" title="Actualizar ahora">🔄</button>
     </div>
 
     <div id="setup-banner" class="card" style="display:none;border-left:4px solid var(--amarillo);flex-direction:column;gap:.5rem">
@@ -665,6 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Then fetch from sheets if URL exists
   if (S.sheetUrl) {
     fetchFromSheets();
+    startAutoSync();
   } else {
     setSyncStatus('a', 'warn', 'Sin Google Sheets configurado — datos locales', '');
     document.getElementById('setup-banner').style.display = 'flex';
@@ -696,6 +705,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', e => {
     if (!e.target.closest('.ac-wrap')) {
       document.querySelectorAll('.ac-list').forEach(l => l.classList.remove('open'));
+    }
+  });
+
+  // Al volver a esta pestaña/app, refrescar datos de inmediato
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && S.sheetUrl) {
+      fetchFromSheets();
     }
   });
 });
@@ -743,6 +759,7 @@ function saveURL() {
   document.getElementById('setup-banner').style.display = 'none';
   toast('URL guardada ✓', 'ok');
   fetchFromSheets();
+  startAutoSync();
 }
 
 async function fetchFromSheets() {
@@ -760,6 +777,19 @@ async function fetchFromSheets() {
     setSyncStatus('a', 'err', 'Sin conexión — mostrando datos locales', '');
     console.warn('Sheets fetch error:', err);
   }
+}
+
+// Revisa Google Sheets automáticamente cada cierto tiempo, así no
+// hace falta recargar la página para ver cambios hechos desde otro
+// dispositivo (por ejemplo, registros nuevos del administrador).
+let autoSyncTimer = null;
+function startAutoSync(intervalMs = 20000) {
+  if (autoSyncTimer) clearInterval(autoSyncTimer);
+  autoSyncTimer = setInterval(() => {
+    if (document.visibilityState === 'visible' && S.sheetUrl) {
+      fetchFromSheets();
+    }
+  }, intervalMs);
 }
 
 function parseSheetRows(rows) {
