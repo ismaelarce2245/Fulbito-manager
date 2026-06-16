@@ -14,7 +14,7 @@
   --rojo:#f03e3e;--verde-ok:#00d96b;
   --bg:#d6e8d6;
   --rad:10px;--shadow:0 2px 10px rgba(0,0,0,.08);
-  --nav-h:0px;--hdr-h:110px;
+  --nav-h:0px;--hdr-h:112px;
 }
 
 html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--gris-d)}
@@ -29,7 +29,7 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:
 .logo{font-family:'Oswald',sans-serif;font-size:1.4rem;font-weight:700;
   color:var(--blanco);letter-spacing:.04em;display:flex;align-items:center;gap:.4rem}
 .logo em{color:var(--amarillo);font-style:normal}
-#hdr-top{display:flex;align-items:center;justify-content:space-between;padding:0 1rem;height:56px;flex-shrink:0}
+#hdr-top{display:flex;align-items:center;justify-content:space-between;padding:0 1rem;height:60px;flex-shrink:0}
 #hdr-date{font-size:.7rem;color:rgba(255,255,255,.6);letter-spacing:.04em;text-align:right;line-height:1.4}
 
 /* ── HEADER LOGO IMAGE ── */
@@ -40,21 +40,22 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:
 
 /* ── NAV (dentro del header) ── */
 #nav{
-  display:flex;height:54px;flex-shrink:0;
-  border-top:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.06);
+  display:flex;height:52px;flex-shrink:0;
+  border-top:1px solid rgba(255,255,255,.15);
+  background:rgba(0,0,0,.18);
 }
 .tab{
   flex:1;border:none;background:transparent;
-  color:rgba(255,255,255,.55);
-  font-family:'Oswald',sans-serif;font-size:.7rem;font-weight:500;
-  letter-spacing:.05em;cursor:pointer;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2rem;
-  border-bottom:3px solid transparent;transition:background .18s,color .18s,border-color .18s;padding:.35rem 0;
+  color:rgba(255,255,255,.6);
+  font-family:'Oswald',sans-serif;font-size:.68rem;font-weight:600;
+  letter-spacing:.04em;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.15rem;
+  border-bottom:3px solid transparent;transition:background .18s,color .18s,border-color .18s;padding:.3rem 0;
+  white-space:nowrap;
 }
-.tab .ti{font-size:1.15rem;line-height:1}
-.tab:hover{color:var(--blanco);background:rgba(255,255,255,.13)}
-.tab.on{color:var(--amarillo);border-bottom-color:var(--amarillo);background:rgba(255,191,0,.14)}
+.tab .ti{font-size:1.2rem;line-height:1}
+.tab:hover{color:#ffffff;background:rgba(255,255,255,.15)}
+.tab.on{color:var(--amarillo);border-bottom-color:var(--amarillo);background:rgba(255,191,0,.16)}
 
 /* ── MAIN SCROLL ── */
 #main{
