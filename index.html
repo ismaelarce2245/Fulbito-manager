@@ -156,7 +156,9 @@ input:focus,select:focus{border-color:var(--verde-c);box-shadow:0 0 0 3px rgba(0
 .btn-clear{width:auto;padding:.45rem 1rem;font-size:.75rem}
 
 /* ── TABLE ── */
-.tbl{width:100%;border-collapse:collapse;font-size:.83rem}
+.tbl-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl{width:100%;border-collapse:collapse;font-size:.83rem;min-width:420px}
+.tbl .col-fecha{white-space:nowrap;font-size:.78rem}
 .tbl th{background:var(--verde);color:var(--amarillo);font-family:'Oswald',sans-serif;
   font-weight:500;letter-spacing:.06em;padding:.55rem .75rem;text-align:left;font-size:.72rem;text-transform:uppercase}
 .tbl th:first-child{border-radius:6px 0 0 0}.tbl th:last-child{border-radius:0 6px 0 0}
@@ -530,9 +532,21 @@ function todayISO() {
   const pad = n => String(n).padStart(2,'0');
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 }
+// Normaliza cualquier valor de fecha que venga de Google Sheets a
+// formato YYYY-MM-DD puro. Sheets a veces convierte el string que
+// enviamos ("2026-06-14") en un objeto Date real, que al volver en
+// JSON aparece como "2026-06-14T05:00:00.000Z" — esta función corta
+// ese string a solo la parte de fecha, sin importar el formato de entrada.
+function normalizeFecha(val) {
+  if (!val) return '';
+  const s = String(val);
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : '';
+}
 function formatFecha(iso) {
-  if (!iso || iso.length < 10) return '—';
-  const [y,m,d] = iso.split('-');
+  const norm = normalizeFecha(iso);
+  if (!norm) return '—';
+  const [y,m,d] = norm.split('-');
   return `${d}/${m}/${y}`;
 }
 // Ordena por fecha descendente (más reciente primero); si la fecha
@@ -690,9 +704,12 @@ function parseSheetRows(rows) {
   const roster  = new Map();     // nombre -> id (tipo='jugador')
   rows.forEach(r => {
     const [tipo, id, c1, c2, c3, c4, fechaServer] = r;
-    // c4 = fecha elegida por el usuario (YYYY-MM-DD). Si no existe
+    // c4 = fecha elegida por el usuario. Google Sheets puede devolverla
+    // como "2026-06-14" o como ISO completo ("2026-06-14T05:00:00.000Z")
+    // dependiendo de si la celda quedó como texto o como fecha real.
+    // normalizeFecha() deja siempre YYYY-MM-DD puro. Si no existe
     // (registros antiguos), usamos la fecha del servidor como respaldo.
-    const fecha = c4 || (fechaServer ? String(fechaServer).slice(0,10) : '');
+    const fecha = normalizeFecha(c4) || normalizeFecha(fechaServer);
     if (tipo === 'aporte') {
       S.aportes.push({ id, nombre: c1, monto: parseFloat(c2)||0, ts: c3, fecha });
       if (c1) jugs.add(c1);
@@ -856,10 +873,10 @@ function renderAportes() {
     return;
   }
   const total = lista.reduce((s,a) => s + a.monto, 0);
-  wrap.innerHTML = `<table class="tbl">
+  wrap.innerHTML = `<div class="tbl-wrap"><table class="tbl">
     <thead><tr><th>Fecha</th><th>Jugador</th><th>Monto</th><th>Hora</th></tr></thead>
     <tbody>${lista.map(a => `<tr>
-      <td class="c-muted">${formatFecha(a.fecha)}</td>
+      <td class="c-muted col-fecha">${formatFecha(a.fecha)}</td>
       <td><strong>${esc(a.nombre)}</strong></td>
       <td class="mono c-ok">S/ ${a.monto.toFixed(2)}</td>
       <td class="c-muted">${esc(a.ts)}</td>
@@ -868,7 +885,7 @@ function renderAportes() {
       <td colspan="3" style="color:var(--gris-m);font-size:.72rem;letter-spacing:.06em">TOTAL</td>
       <td class="c-ok" style="font-size:1rem">S/ ${total.toFixed(2)}</td>
     </tr></tfoot>
-  </table>`;
+  </table></div>`;
 }
 
 // ══════════════════════════════════════════════════
@@ -895,10 +912,10 @@ function renderGastos() {
     return;
   }
   const total = lista.reduce((s,g) => s + g.monto, 0);
-  wrap.innerHTML = `<table class="tbl">
+  wrap.innerHTML = `<div class="tbl-wrap"><table class="tbl">
     <thead><tr><th>Fecha</th><th>Descripción</th><th>Monto</th><th>Hora</th></tr></thead>
     <tbody>${lista.map(g => `<tr>
-      <td class="c-muted">${formatFecha(g.fecha)}</td>
+      <td class="c-muted col-fecha">${formatFecha(g.fecha)}</td>
       <td><strong>${esc(g.desc)}</strong></td>
       <td class="mono c-err">S/ ${g.monto.toFixed(2)}</td>
       <td class="c-muted">${esc(g.ts)}</td>
@@ -907,7 +924,7 @@ function renderGastos() {
       <td colspan="3" style="color:var(--gris-m);font-size:.72rem;letter-spacing:.06em">TOTAL</td>
       <td class="c-err" style="font-size:1rem">S/ ${total.toFixed(2)}</td>
     </tr></tfoot>
-  </table>`;
+  </table></div>`;
 }
 
 function limpiarFiltro(tipo) {
@@ -950,25 +967,25 @@ function renderResumen() {
   const jugList = Object.entries(byJ).sort((a,b) => b[1]-a[1]);
   const wJ = document.getElementById('r-jug');
   if (wJ) wJ.innerHTML = jugList.length
-    ? `<table class="tbl">
+    ? `<div class="tbl-wrap"><table class="tbl">
         <thead><tr><th>Jugador</th><th>Total</th></tr></thead>
         <tbody>${jugList.map(([n,m]) => `<tr>
           <td><strong>${esc(n)}</strong></td>
           <td class="mono c-ok">S/ ${m.toFixed(2)}</td>
         </tr>`).join('')}</tbody>
-      </table>`
+      </table></div>`
     : '<div class="empty"><span class="empty-ico">👥</span>Sin datos.</div>';
 
   // Gastos detalle
   const wG = document.getElementById('r-gas');
   if (wG) wG.innerHTML = S.gastos.length
-    ? `<table class="tbl">
+    ? `<div class="tbl-wrap"><table class="tbl">
         <thead><tr><th>Descripción</th><th>Monto</th></tr></thead>
         <tbody>${S.gastos.map(g => `<tr>
           <td>${esc(g.desc)}</td>
           <td class="mono c-err">S/ ${g.monto.toFixed(2)}</td>
         </tr>`).join('')}</tbody>
-      </table>`
+      </table></div>`
     : '<div class="empty"><span class="empty-ico">🧾</span>Sin gastos.</div>';
 }
 
@@ -1086,14 +1103,14 @@ function renderStats() {
   if (histG) {
     const lista = sortByFechaDesc(S.goles);
     histG.innerHTML = lista.length
-      ? `<table class="tbl">
+      ? `<div class="tbl-wrap"><table class="tbl">
           <thead><tr><th>Fecha</th><th>Jugador</th><th>Goles</th></tr></thead>
           <tbody>${lista.map(g => `<tr>
-            <td class="c-muted">${formatFecha(g.fecha)}</td>
+            <td class="c-muted col-fecha">${formatFecha(g.fecha)}</td>
             <td><strong>${esc(g.nombre)}</strong></td>
             <td class="mono c-ok">${g.goles}</td>
           </tr>`).join('')}</tbody>
-        </table>`
+        </table></div>`
       : '<div class="empty"><span class="empty-ico">⚽</span>Sin registros.</div>';
   }
 
@@ -1102,15 +1119,15 @@ function renderStats() {
   if (histP) {
     const lista = sortByFechaDesc(S.puntos);
     histP.innerHTML = lista.length
-      ? `<table class="tbl">
+      ? `<div class="tbl-wrap"><table class="tbl">
           <thead><tr><th>Fecha</th><th>Jugador</th><th>⭐ Jug.</th><th>🧤 Arq.</th></tr></thead>
           <tbody>${lista.map(p => `<tr>
-            <td class="c-muted">${formatFecha(p.fecha)}</td>
+            <td class="c-muted col-fecha">${formatFecha(p.fecha)}</td>
             <td><strong>${esc(p.nombre)}</strong></td>
             <td class="mono">${p.ptsJugador}</td>
             <td class="mono">${p.ptsArquero}</td>
           </tr>`).join('')}</tbody>
-        </table>`
+        </table></div>`
       : '<div class="empty"><span class="empty-ico">🏅</span>Sin registros.</div>';
   }
 }
